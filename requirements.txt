@@ -1,0 +1,12 @@
+streamlit
+fastapi
+uvicorn
+requests
+python-dotenv
+openai>=1.35.0
+faiss-cpu
+sqlite-utils
+msal
+beautifulsoup4
+lxml
+pydantic>=2
