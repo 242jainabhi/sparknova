@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import msal
 import sqlite3
@@ -47,6 +48,7 @@ def fetch_all_pages(url: str):
     return results
 
 def fetch_channel_messages_with_replies(team_id: str, channel_id: str):
+    print('inside fetch_channel_messages_with_replies')
     roots = fetch_all_pages(f"{GRAPH}/teams/{team_id}/channels/{channel_id}/messages")
     threads = []
     for root in roots:
@@ -62,6 +64,12 @@ def fetch_channel_messages_with_replies(team_id: str, channel_id: str):
                 parts.append(f"REPLY: {t}")
         merged = "\n".join(parts).strip()
         threads.append({"root_id": rid, "text": merged})
+        
+        # print("$$$$$$$$")
+        # print({"root_id": rid, "text": merged})
+        # print("@@@@@@@@@@@")
+        # exit()
+    print('exiting fetch_channel_messages_with_replies')
     return threads
 
 def load_channels_from_env():
@@ -95,23 +103,28 @@ def upsert_threads(conn: sqlite3.Connection, channel_label: str, team_id: str, c
     conn.commit()
 
 def main():
-    chans = load_channels_from_env()
-    if not chans:
-        raise SystemExit("No channels configured in .env")
+    # chans = load_channels_from_env()
+    # if not chans:
+    #     raise SystemExit("No channels configured in .env")
 
-    conn = get_sqlite(DB_PATH)
-    total = 0
-    for c in chans:
-        print(f"Fetching: {c['channel_label']}")
-        threads = fetch_channel_messages_with_replies(c["team_id"], c["channel_id"])
-        upsert_threads(conn, c["channel_label"], c["team_id"], c["channel_id"], threads)
-        print(f"  Upserted {len(threads)} threads.")
-        total += len(threads)
-
+    t1 = time.time()
+    # conn = get_sqlite(DB_PATH)
+    # total = 0
+    # for c in chans:
+    #     print(f"Fetching: {c['channel_label']}")
+    #     threads = fetch_channel_messages_with_replies(c["team_id"], c["channel_id"])
+    #     upsert_threads(conn, c["channel_label"], c["team_id"], c["channel_id"], threads)
+    #     print(f"  Upserted {len(threads)} threads.")
+    #     total += len(threads)
+    t2 = time.time()
+    # print("time to store in sqlite.", t2 - t1)
+    # conn.close()
     # Rebuild FAISS from all docs
     print("Building FAISS index from SQLite...")
     build_faiss_from_sqlite(DB_PATH, FAISS_INDEX, embed_texts, channel_filter=None)
-    print(f"Done. Total threads indexed: {total}")
+    # print(f"Done. Total threads indexed: {total}")
+    t3 = time.time()
+    print("time to build faiss.", t3 - t2)
 
 if __name__ == "__main__":
     main()
